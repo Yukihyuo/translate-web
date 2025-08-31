@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import DialogCard from './components/DialogCard'; // Ajusta la ruta
 import axios from 'axios'; // Para hacer peticiones HTTP
 import './index.css'; // Asegúrate de importar tus estilos de Tailwind
+import ProgressDashboard from './components/Statistics';
 
 function App() {
     const [currentDialog, setCurrentDialog] = useState(null);
@@ -89,7 +90,7 @@ function App() {
     return (
         <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
             <h1 className="text-4xl font-bold text-gray-800 mb-8 mt-4">Traducción de Diálogos del Juego</h1>
-            
+            <ProgressDashboard/>
             <DialogCard
                 dialog={currentDialog}
                 onSave={handleSave}
