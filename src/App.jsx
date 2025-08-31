@@ -61,7 +61,7 @@ function App() {
     const handleNext = (currentDialogId) => {
         // Encuentra el índice del diálogo actual en la cola
         const currentIndexInQueue = dialogsQueue.findIndex(d => d._id === currentDialogId);
-        
+
         // Si el diálogo actual fue guardado o saltado, lo removemos de la cola
         const updatedQueue = dialogsQueue.filter(d => d._id !== currentDialogId);
         setDialogsQueue(updatedQueue);
@@ -88,15 +88,17 @@ function App() {
     if (!currentDialog) return <div className="flex justify-center items-center h-screen text-xl">No hay diálogos pendientes. ¡Felicidades!</div>;
 
     return (
-        <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8 mt-4">Traducción de Diálogos del Juego</h1>
-            <ProgressDashboard/>
+        <div className="min-h-screen bg-gray-100 p-2 flex flex-col items-center">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Traducción de Diálogos del Juego</h1>
+
             <DialogCard
                 dialog={currentDialog}
                 onSave={handleSave}
                 onNext={handleNext}
                 onSkip={handleSkip}
             />
+
+            <ProgressDashboard />
             {/* Opcional: Puedes agregar un contador de progreso global aquí si obtienes las estadísticas de la API */}
         </div>
     );
