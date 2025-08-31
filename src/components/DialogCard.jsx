@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
-import { Copy } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Copy, Sparkles } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 
 const DialogCard = ({ dialog, onSave, onNext, onSkip }) => {
-  // Estado local para la traducción en español
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [esEsText, setEsEsText] = useState(dialog['es-ES'] || '');
-  // Estado local para el status
   const [status, setStatus] = useState(dialog.status);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  useEffect(() => {
+    if (!esEsText && dialog['en-US']) {
+      handleTranslate();
+    }
+  }, [dialog['en-US']]);
 
   const handleCopy = (text, message) => {
     navigator.clipboard.writeText(text)
@@ -19,13 +26,36 @@ const DialogCard = ({ dialog, onSave, onNext, onSkip }) => {
       });
   };
 
+  const handleTranslate = async () => {
+    setIsTranslating(true);
+    try {
+      const res = await axios.post(API_BASE_URL + "/api/translate", {
+        text: dialog['en-US'],
+      });
+
+      if (res.data && res.data.translations) {
+        console.log(res.data)
+        setEsEsText(res.data.translations.google);
+        if (status === 'pendiente') {
+          setStatus('en_progreso');
+        }
+      } else {
+        toast.error("No se pudo obtener la traducción.");
+      }
+    } catch (err) {
+      toast.error("Error al conectar con el servicio de traducción.");
+      console.error("Error de traducción:", err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const handleSave = () => {
-    // Llama a la función onSave pasada por props con la nueva traducción y el estado
     onSave(dialog._id, esEsText, status);
   };
 
   return (
-    <div className="bg-white rounded-lg border shadow-sm p-6 w-full max-w-2xl mx-auto my-8">
+    <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl mx-auto my-8">
       <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="light" />
       <div className="flex flex-col space-y-1.5 pb-6 border-b">
         <div className="flex items-center justify-between">
@@ -47,12 +77,15 @@ const DialogCard = ({ dialog, onSave, onNext, onSkip }) => {
       <div className="p-6 grid gap-4">
         {/* Texto en inglés (en-US) */}
         <div className="space-y-2 relative">
-          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-700">
+          <label htmlFor="en-US" className="text-sm font-medium leading-none text-gray-700">
             Texto Original (en-US)
           </label>
-          <div
-            className="flex min-h-[80px] w-full rounded-md bg-gray-300 pl-2 pr-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
-          >{dialog['en-US'] || 'N/A'}</div>
+          <textarea
+            id="en-US"
+            className="flex min-h-[80px] w-full rounded-md bg-slate-300 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+            value={dialog['en-US'] || 'N/A'}
+            readOnly
+          />
           <button
             onClick={() => handleCopy(dialog['en-US'], 'Texto original copiado al portapapeles.')}
             className="absolute top-8 right-2 p-2 rounded-md hover:bg-gray-200 transition-colors"
@@ -64,12 +97,22 @@ const DialogCard = ({ dialog, onSave, onNext, onSkip }) => {
 
         {/* Input para la traducción al español (es-ES) */}
         <div className="space-y-2">
-          <label htmlFor="es-ES" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-700">
-            Traducción (es-ES)
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="es-ES" className="text-sm font-medium leading-none text-gray-700">
+              Traducción (es-ES)
+            </label>
+            <button
+              onClick={handleTranslate}
+              disabled={isTranslating}
+              className={`p-2 rounded-md transition-colors flex items-center gap-1 text-sm font-medium ${isTranslating ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-gray-100'}`}
+            >
+              <Sparkles className="h-4 w-4" />
+              {isTranslating ? 'Traduciendo...' : 'Traducir Automático'}
+            </button>
+          </div>
           <textarea
             id="es-ES"
-            className="flex min-h-[80px] w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[80px] w-full rounded-md shadow-md bg-slate-200 focus:border-none px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Ingresa la traducción aquí..."
             value={esEsText}
             onChange={(e) => {
@@ -101,10 +144,10 @@ const DialogCard = ({ dialog, onSave, onNext, onSkip }) => {
                 <label
                   htmlFor={`status-${option}`}
                   className={`
-                                        inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium
-                                        rounded-md border border-input transition-colors cursor-pointer
-                                        ${status === option ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-100'}
-                                    `}
+                    inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium
+                    rounded-md border border-input transition-colors cursor-pointer
+                    ${status === option ? 'bg-blue-600 text-white' : 'bg-white hover:bg-gray-100'}
+                    `}
                 >
                   {option.charAt(0).toUpperCase() + option.slice(1).replace('_', ' ')}
                 </label>
